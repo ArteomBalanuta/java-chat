@@ -21,8 +21,8 @@ public class Engine {
     private static final int MESSAGES_MAX_NUMBER = 300;
     private static final int THREAD_NUMBER = 2;
 
-    private static final BlockingQueue<Message> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER);
-    private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER);
+    private static final BlockingQueue<Message> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, true);
+    private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 
     private final ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
 
@@ -83,14 +83,29 @@ public class Engine {
             leftMessage.setMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()));
             messageQueueBuffer.put(leftMessage);
             userQueue.remove(user);
-            log("User left: " + user.getTrip());
+            log(String.format(MESSAGE_USER_LEFT, user.getTrip()));
         } catch (InterruptedException interruptedException) {
             interruptedException.printStackTrace();
         }
     }
 
+
+    private void checkUserConnection() {
+        char nullByte = 0b00000000;
+        userQueue.forEach(user -> {
+                    try {
+                        BufferedWriter userWriter = user.getUserWriter();
+                        userWriter.write(nullByte);
+                        userWriter.flush();
+                    } catch (IOException e) {
+                        userLeftNotify(user);
+                    }
+                });
+    }
+
     public void start() {
         executorScheduler.scheduleWithFixedDelay(this::getMessages, 0, 1, TimeUnit.MILLISECONDS);
         executorScheduler.scheduleWithFixedDelay(this::sendMessages, 0, 1, TimeUnit.MILLISECONDS);
+        executorScheduler.scheduleWithFixedDelay(this::checkUserConnection, 0, 3, TimeUnit.MILLISECONDS);
     }
 }
