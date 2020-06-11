@@ -2,13 +2,18 @@ package main.runner;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Run {
+    private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
     private static volatile Socket connection;
     private static DataOutputStream outputStream;
 
     private static PrintStream out;
+
+    private final List<String> msgQueue = new ArrayList<>();
 
     void acquireConnection() {
         try {
@@ -19,18 +24,35 @@ public class Run {
         }
     }
 
-    void processTheMessage() {
-        String message = getMsg();
-        sendMessage(message);
+    synchronized String getFromQueue() {
+        String msg = null;
+        if (msgQueue.size() != 0) {
+            msg = msgQueue.get(msgQueue.size() - 1);
+            msgQueue.remove(msgQueue.size() - 1);
+        }
+        return msg;
     }
 
-    String getMsg() {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    void addMsg() {
+        while (true) {
+            try {
+                Thread.sleep(50);
+
+                String msg = reader.readLine();
+                msgQueue.add(msg);
+            } catch (InterruptedException | IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    void getSendLoop() {
         while (true) {
             try {
                 Thread.sleep(20);
-                return reader.readLine();
-            } catch (IOException | InterruptedException e) {
+                String toSend = getFromQueue();
+                sendMessage(toSend);
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -39,6 +61,7 @@ public class Run {
     static void sendMessage(String msg) {
         if (msg != null) {
             try {
+                System.out.println("S: " + msg);
                 outputStream.writeUTF(msg);
                 outputStream.flush();
             } catch (IOException e) {
@@ -50,11 +73,12 @@ public class Run {
     public static void main(String[] args) {
         Run application = new Run();
         application.acquireConnection();
-        //reading msg and send thread
-        new Thread(application::processTheMessage).start();
 
-        //receive and print thread
-//            new Thread(ap).start();
+        //read and enqueue msg
+        new Thread(application::addMsg).start();
+
+        //send
+        new Thread(application::getSendLoop).start();
 
     }
 }
