@@ -1,6 +1,7 @@
 package main.runner;
 
-import main.engine.Engine;
+import main.engine.console.ConsoleEngine;
+import main.engine.server.ChatEngine;
 import main.models.user.User;
 
 import java.io.IOException;
@@ -9,8 +10,9 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static java.lang.String.*;
+import static main.engine.console.ConsoleEngine.*;
 import static main.utils.Constants.*;
-import static main.utils.Utils.log;
 
 public class Run {
     private static final int SERVER_PORT = 800;
@@ -18,21 +20,22 @@ public class Run {
 
     private final ServerSocket server;
 
-    private final Thread listenThread;
+    private final Thread listenNewConnectionsThread;
     private final Thread engineThread;
 
     private static final ExecutorService appExecutor = Executors.newFixedThreadPool(THREAD_NUMBER);
 
-    private Run(ServerSocket server, Engine engine) {
+    private Run(ServerSocket server, ChatEngine chatEngine) {
         this.server = server;
-        this.listenThread = new Thread(this::listenForConnections);
-        this.engineThread = new Thread(engine::start);
+
+        this.listenNewConnectionsThread = new Thread(this::listenForConnections);
+        this.engineThread = new Thread(chatEngine::start);
     }
 
-    private static void saveUser(Socket socket) {
+    private void saveUser(Socket socket) {
         User user = new User(socket);
-        Engine.saveUser(user);
-        log(String.format(MESSAGE_USER_JOIN, user.getTrip()));
+        ChatEngine.saveUser(user);
+        log(format(MESSAGE_USER_JOIN, user.getTrip()));
     }
 
     private void listenForConnections() {
@@ -47,19 +50,19 @@ public class Run {
     }
 
     private void startServer() {
-        appExecutor.submit(listenThread);
+        appExecutor.submit(listenNewConnectionsThread);
         appExecutor.submit(engineThread);
-        log(SERVER_STARTED);
+        log(format(SERVER_ONLINE, server.getInetAddress(), SERVER_PORT));
     }
 
     public static void main(String[] args) {
         try {
             ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-            Engine engine = new Engine();
-            Run applicationServer = new Run(serverSocket, engine);
+            ChatEngine chatEngine = new ChatEngine();
+
+            Run applicationServer = new Run(serverSocket, chatEngine);
 
             applicationServer.startServer();
-            log(String.format(SERVER_ONLINE, serverSocket.getInetAddress(), SERVER_PORT));
 
         } catch (Exception exception) {
             exception.printStackTrace();

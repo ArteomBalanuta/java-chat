@@ -1,9 +1,17 @@
 package main.utils;
 
 
+import java.awt.*;
+import java.io.*;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+
+import static java.nio.charset.StandardCharsets.*;
+import static java.nio.file.Files.*;
 
 public class Utils {
     public static boolean isNotNullOrEmpty(String str) {
@@ -14,13 +22,12 @@ public class Utils {
     }
 
 
-    public static void log(String str) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[ yyyy-MM-dd hh:mm:ss ]");
-        String localDateTime = LocalDateTime.now().format(formatter);
-        System.out.println(localDateTime + " - " + str + '\n');
-    }
-
     public static String generateTrip() {
         return UUID.randomUUID().toString().substring(0, 5);
+    }
+
+    private static void readFile(String filePath) throws IOException {
+        List<String> lines = readAllLines(Path.of(filePath));
+
     }
 }

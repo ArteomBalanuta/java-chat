@@ -1,4 +1,4 @@
-package main.engine;
+package main.engine.server;
 
 import main.models.message.Message;
 import main.models.user.User;
@@ -12,11 +12,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.Executors.newScheduledThreadPool;
+import static main.engine.console.ConsoleEngine.log;
 import static main.utils.Constants.MESSAGE_USER_LEFT;
 import static main.utils.Utils.isNotNullOrEmpty;
-import static main.utils.Utils.log;
 
-public class Engine {
+
+public class ChatEngine {
     private static final int USERS_MAX_NUMBER = 50;
     private static final int MESSAGES_MAX_NUMBER = 300;
     private static final int THREAD_NUMBER = 2;
@@ -63,7 +64,15 @@ public class Engine {
                 }
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            try {
+            Message leftMessage = new Message();
+            leftMessage.setMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()));
+            messageQueueBuffer.put(leftMessage);
+            userQueue.remove(user);
+            log(String.format(MESSAGE_USER_LEFT, user.getTrip()));
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+            }
         }
     }
 
@@ -88,7 +97,6 @@ public class Engine {
             interruptedException.printStackTrace();
         }
     }
-
 
     private void checkUserConnection() {
         char nullByte = 0b00000000;
