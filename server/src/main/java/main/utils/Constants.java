@@ -19,4 +19,8 @@ public class Constants {
 
     Message MESSAGE_INVALID_CMD = new Message("Invalid command!");
 
+    public static final String CONSOlE_CMD_HELP = "help";
+    public static final String CONSOLE_CMD_START = "start";
+    public static final String CONSOLE_CMD_STOP = "stop";
+
 }

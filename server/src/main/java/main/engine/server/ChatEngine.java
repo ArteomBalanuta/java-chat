@@ -1,8 +1,12 @@
 package main.engine.server;
 
+import main.engine.BucketGuiMessage;
+import main.engine.Engine;
+import main.engine.console.ConsoleEngine;
 import main.models.message.Message;
 import main.models.user.User;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -12,20 +16,26 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.Executors.newScheduledThreadPool;
-import static main.engine.console.ConsoleEngine.log;
 import static main.utils.Constants.MESSAGE_USER_LEFT;
 import static main.utils.Utils.isNotNullOrEmpty;
 
 
-public class ChatEngine {
+public class ChatEngine  {
+
     private static final int USERS_MAX_NUMBER = 50;
     private static final int MESSAGES_MAX_NUMBER = 300;
     private static final int THREAD_NUMBER = 2;
+    private final ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
 
     private static final BlockingQueue<Message> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, true);
     private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 
-    private final ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
+    public final BucketGuiMessage bucketGuiMessages;
+    private boolean isRunning = false;
+
+    public ChatEngine(BucketGuiMessage bucketGuiMessage){
+        bucketGuiMessages = bucketGuiMessage;
+    };
 
     public static void saveUser(User user) {
         try {
@@ -35,11 +45,11 @@ public class ChatEngine {
         }
     }
 
-    private void getMessages() {
+    public void getMessages() {
         userQueue.forEach(this::getMessageFrom);
     }
 
-    private void sendMessages() {
+    public void sendMessages() {
         try {
             for (Object ignored : messageQueueBuffer) {
                 Message message = messageQueueBuffer.take();
@@ -64,15 +74,7 @@ public class ChatEngine {
                 }
             }
         } catch (IOException | InterruptedException e) {
-            try {
-            Message leftMessage = new Message();
-            leftMessage.setMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()));
-            messageQueueBuffer.put(leftMessage);
-            userQueue.remove(user);
-            log(String.format(MESSAGE_USER_LEFT, user.getTrip()));
-            } catch (InterruptedException interruptedException) {
-                interruptedException.printStackTrace();
-            }
+                userLeftNotify(user);
         }
     }
 
@@ -92,28 +94,43 @@ public class ChatEngine {
             leftMessage.setMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()));
             messageQueueBuffer.put(leftMessage);
             userQueue.remove(user);
-            log(String.format(MESSAGE_USER_LEFT, user.getTrip()));
+
+            main.engine.console.models.Message consoleLeftMessage =
+                    new main.engine.console.models.Message(String.format(MESSAGE_USER_LEFT, user.getTrip()), Color.red, true);
+            bucketGuiMessages.addMessage(consoleLeftMessage);
         } catch (InterruptedException interruptedException) {
             interruptedException.printStackTrace();
         }
     }
 
-    private void checkUserConnection() {
+    public void checkUserConnection() {
         char nullByte = 0b00000000;
         userQueue.forEach(user -> {
-                    try {
-                        BufferedWriter userWriter = user.getUserWriter();
-                        userWriter.write(nullByte);
-                        userWriter.flush();
-                    } catch (IOException e) {
-                        userLeftNotify(user);
-                    }
-                });
+            try {
+                BufferedWriter userWriter = user.getUserWriter();
+                userWriter.write(nullByte);
+                userWriter.flush();
+            } catch (IOException e) {
+                userLeftNotify(user);
+            }
+        });
     }
 
     public void start() {
+        isRunning = true;
         executorScheduler.scheduleWithFixedDelay(this::getMessages, 0, 1, TimeUnit.MILLISECONDS);
         executorScheduler.scheduleWithFixedDelay(this::sendMessages, 0, 1, TimeUnit.MILLISECONDS);
         executorScheduler.scheduleWithFixedDelay(this::checkUserConnection, 0, 3, TimeUnit.MILLISECONDS);
+    }
+
+    public void stop() {
+        try {
+            if (isRunning) {
+                executorScheduler.awaitTermination(2, TimeUnit.SECONDS);
+                isRunning = false;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
