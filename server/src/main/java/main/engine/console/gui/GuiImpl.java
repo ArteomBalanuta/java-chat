@@ -1,8 +1,6 @@
 package main.engine.console.gui;
 
-import lombok.Getter;
-import lombok.Setter;
-import main.engine.console.models.Message;
+import main.engine.console.models.GuiMessage;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -51,9 +49,9 @@ public class GuiImpl implements Gui {
         input.requestFocus();
     }
 
-    public void print(Message message) {
+    public void print(GuiMessage guiMessage) {
         StyleContext sc = StyleContext.getDefaultStyleContext();
-        AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, message.getMessageColor());
+        AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, guiMessage.getMessageColor());
 
         aset = sc.addAttribute(aset, StyleConstants.FontFamily, CONSOLE_FONT_FAMILY);
         aset = sc.addAttribute(aset, StyleConstants.Alignment, StyleConstants.ALIGN_JUSTIFIED);
@@ -64,7 +62,7 @@ public class GuiImpl implements Gui {
 
         int outDocumentLength = outputDocument.getLength();
         try {
-            output.getStyledDocument().insertString(outDocumentLength, message.getMessage(), aset);
+            output.getStyledDocument().insertString(outDocumentLength, guiMessage.getMessage(), aset);
             output.setCaretPosition(outDocumentLength);
             input.setText(CONSOLE_EMPTY_STRING);
         } catch (BadLocationException e1) {
@@ -79,7 +77,6 @@ public class GuiImpl implements Gui {
     public void clearInput() {
         input.setText(CONSOLE_EMPTY_STRING);
     }
-
 
     public JTextField getInput() {
         return input;

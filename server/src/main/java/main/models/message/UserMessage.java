@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Message {
+public class UserMessage {
     private String owner;
     private String body;
     private String message;
@@ -16,7 +16,7 @@ public class Message {
     private final char separator = ':';
     private final char eol = '\n';
 
-    public Message(String owner, String body) {
+    public UserMessage(String owner, String body) {
         this.owner = owner;
         this.body = body;
         this.message = this.owner +

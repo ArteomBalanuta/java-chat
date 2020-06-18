@@ -1,9 +1,8 @@
 package main.engine.server;
 
 import main.engine.BucketGuiMessage;
-import main.engine.Engine;
-import main.engine.console.ConsoleEngine;
-import main.models.message.Message;
+import main.engine.console.models.GuiMessage;
+import main.models.message.UserMessage;
 import main.models.user.User;
 
 import java.awt.*;
@@ -25,9 +24,9 @@ public class ChatEngine  {
     private static final int USERS_MAX_NUMBER = 50;
     private static final int MESSAGES_MAX_NUMBER = 300;
     private static final int THREAD_NUMBER = 2;
-    private final ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
 
-    private static final BlockingQueue<Message> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, true);
+    private final ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
+    private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, true);
     private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 
     public final BucketGuiMessage bucketGuiMessages;
@@ -45,43 +44,40 @@ public class ChatEngine  {
         }
     }
 
-    public void getMessages() {
-        userQueue.forEach(this::getMessageFrom);
+    public void getUserMessages() {
+        userQueue.forEach(this::getUserMessage);
     }
 
-    public void sendMessages() {
+    public void shareUserMessages() {
         try {
-            for (Object ignored : messageQueueBuffer) {
-                Message message = messageQueueBuffer.take();
-                for (User user : userQueue) {
-                    sendMessagesTo(user, message);
-                }
+            UserMessage userMessage = messageQueueBuffer.take();
+            for (User user : userQueue) {
+                sendMessagesTo(user, userMessage);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private void getMessageFrom(User user) {
+    private void getUserMessage(User user) {
         try {
             BufferedReader reader = user.getUserReader();
-            boolean isReady = reader.ready();
-            if (isReady) {
+            if (reader.ready()) {
                 String msgBody = reader.readLine();
                 if (isNotNullOrEmpty(msgBody)) {
-                    Message message = new Message(user.getTrip(), msgBody);
-                    messageQueueBuffer.put(message);
+                    UserMessage userMessage = new UserMessage(user.getTrip(), msgBody);
+                    messageQueueBuffer.put(userMessage);
                 }
             }
         } catch (IOException | InterruptedException e) {
-                userLeftNotify(user);
+            userLeftNotify(user);
         }
     }
 
-    private void sendMessagesTo(User user, Message message) {
+    private void sendMessagesTo(User user, UserMessage userMessage) {
         try {
             BufferedWriter userWriter = user.getUserWriter();
-            userWriter.write(message.getMessage());
+            userWriter.write(userMessage.getMessage());
             userWriter.flush();
         } catch (IOException e) {
             userLeftNotify(user);
@@ -89,21 +85,27 @@ public class ChatEngine  {
     }
 
     private void userLeftNotify(User user) {
-        try {
-            Message leftMessage = new Message();
-            leftMessage.setMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()));
-            messageQueueBuffer.put(leftMessage);
-            userQueue.remove(user);
+        userQueue.remove(user);
+        enqueueUserLeftMessage(user);
+        printUserLeftMessage(user);
+    }
 
-            main.engine.console.models.Message consoleLeftMessage =
-                    new main.engine.console.models.Message(String.format(MESSAGE_USER_LEFT, user.getTrip()), Color.red, true);
-            bucketGuiMessages.addMessage(consoleLeftMessage);
-        } catch (InterruptedException interruptedException) {
-            interruptedException.printStackTrace();
+    private void enqueueUserLeftMessage(User user){
+        try {
+            UserMessage leftUserMessage = new UserMessage();
+            leftUserMessage.setMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()));
+            messageQueueBuffer.put(leftUserMessage);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
-    public void checkUserConnection() {
+    private void printUserLeftMessage(User user){
+        GuiMessage consoleLeftGuiMessage = new GuiMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()), Color.red, true);
+        bucketGuiMessages.addMessage(consoleLeftGuiMessage);
+    }
+
+    public void checkUsersConnection() {
         char nullByte = 0b00000000;
         userQueue.forEach(user -> {
             try {
@@ -118,9 +120,9 @@ public class ChatEngine  {
 
     public void start() {
         isRunning = true;
-        executorScheduler.scheduleWithFixedDelay(this::getMessages, 0, 1, TimeUnit.MILLISECONDS);
-        executorScheduler.scheduleWithFixedDelay(this::sendMessages, 0, 1, TimeUnit.MILLISECONDS);
-        executorScheduler.scheduleWithFixedDelay(this::checkUserConnection, 0, 3, TimeUnit.MILLISECONDS);
+        executorScheduler.scheduleWithFixedDelay(this::getUserMessages, 0, 1, TimeUnit.MILLISECONDS);
+        executorScheduler.scheduleWithFixedDelay(this::shareUserMessages, 0, 1, TimeUnit.MILLISECONDS);
+        executorScheduler.scheduleWithFixedDelay(this::checkUsersConnection, 0, 3, TimeUnit.MILLISECONDS);
     }
 
     public void stop() {

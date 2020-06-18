@@ -1,6 +1,6 @@
 package main.utils;
 
-import main.engine.console.models.Message;
+import main.engine.console.models.GuiMessage;
 
 public class Constants {
     public static final String SERVER_NAME = "JServer";
@@ -17,7 +17,7 @@ public class Constants {
     public static final boolean CONSOLE_FONT_IS_BOLD_TRUE = true;
     public static final boolean CONSOLE_FONT_IS_BOLD_FALSE = false;
 
-    Message MESSAGE_INVALID_CMD = new Message("Invalid command!");
+    GuiMessage GUI_MESSAGE_INVALID_CMD = new GuiMessage("Invalid command!");
 
     public static final String CONSOlE_CMD_HELP = "help";
     public static final String CONSOLE_CMD_START = "start";

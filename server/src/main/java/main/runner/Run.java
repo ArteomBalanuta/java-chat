@@ -2,6 +2,7 @@ package main.runner;
 
 import main.engine.BucketGuiMessage;
 import main.engine.console.ConsoleEngine;
+import main.engine.console.models.GuiMessage;
 import main.engine.server.ChatEngine;
 import main.models.user.User;
 
@@ -36,16 +37,16 @@ public class Run {
 
         this.listenNewConnectionsThread = new Thread(this::listenForConnections);
         this.engineThread = new Thread(chatEngine::start);
-        this.consoleThread = new Thread(consoleEngine::start);
+        this.consoleThread = new Thread(consoleEngine::startConsoleEngine);
     }
 
     private void saveUser(Socket socket) {
         User user = new User(socket);
         ChatEngine.saveUser(user);
 
-        main.engine.console.models.Message consoleLeftMessage =
-                new main.engine.console.models.Message(format(MESSAGE_USER_JOIN, user.getTrip()), Color.red, true);
-        bucketGuiMessages.addMessage(consoleLeftMessage);
+        GuiMessage consoleLeftGuiMessage =
+                new GuiMessage(format(MESSAGE_USER_JOIN, user.getTrip()), Color.red, true);
+        bucketGuiMessages.addMessage(consoleLeftGuiMessage);
     }
 
     private void listenForConnections() {
@@ -64,9 +65,9 @@ public class Run {
         appExecutor.submit(engineThread);
         appExecutor.submit(consoleThread);
 
-        main.engine.console.models.Message serverUpMessage =
-                new main.engine.console.models.Message(format(SERVER_ONLINE, server.getInetAddress(), SERVER_PORT), Color.GRAY, true);
-        bucketGuiMessages.addMessage(serverUpMessage);
+        GuiMessage serverUpGuiMessage =
+                new GuiMessage(format(SERVER_ONLINE, server.getInetAddress(), SERVER_PORT), Color.GRAY, true);
+        bucketGuiMessages.addMessage(serverUpGuiMessage);
     }
 
     public static void main(String[] args) {

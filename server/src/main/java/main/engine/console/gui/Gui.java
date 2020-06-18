@@ -1,11 +1,11 @@
 package main.engine.console.gui;
 
-import main.engine.console.models.Message;
+import main.engine.console.models.GuiMessage;
 
 import javax.swing.*;
 
 public interface Gui {
-    void print(Message message);
+    void print(GuiMessage guiMessage);
     void clearOut();
     void clearInput();
 

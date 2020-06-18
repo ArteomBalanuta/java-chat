@@ -21,13 +21,7 @@ public class Utils {
         return str == null || str.isEmpty() || !str.isBlank();
     }
 
-
     public static String generateTrip() {
         return UUID.randomUUID().toString().substring(0, 5);
-    }
-
-    private static void readFile(String filePath) throws IOException {
-        List<String> lines = readAllLines(Path.of(filePath));
-
     }
 }
