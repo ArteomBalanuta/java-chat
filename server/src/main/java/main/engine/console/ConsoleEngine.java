@@ -1,15 +1,5 @@
 package main.engine.console;
 
-import main.engine.BucketGuiMessage;
-import main.engine.console.gui.Gui;
-import main.engine.console.gui.GuiImpl;
-import main.engine.console.models.GuiMessage;
-import main.engine.console.models.command.Command;
-import main.engine.console.models.command.Help;
-
-import javax.swing.*;
-import javax.swing.text.html.Option;
-
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -22,9 +12,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.swing.*;
+
+import main.engine.console.gui.Gui;
+import main.engine.console.models.GuiMessage;
+import main.engine.console.models.command.Command;
+import main.engine.console.models.command.Help;
+import main.engine.console.models.command.Start;
+import main.engine.console.models.command.Stop;
+import main.models.dto.LinkBucketGuiMessage;
+
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 
-public class ConsoleEngine {
+public class ConsoleEngine  {
 
     private static Gui gui;
 
@@ -53,10 +53,10 @@ public class ConsoleEngine {
     }
 
     private Optional<GuiMessage> getMessageFromBucket() {
-        boolean isEmptyBucket = BucketGuiMessage.getMessagesForGUI().isEmpty();
+        boolean isEmptyBucket = LinkBucketGuiMessage.getMessagesForGUI().isEmpty();
         if (isEmptyBucket) {
             try {
-                return Optional.of(BucketGuiMessage.getMessagesForGUI().take());
+                return Optional.of(LinkBucketGuiMessage.getMessagesForGUI().take());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -109,10 +109,12 @@ public class ConsoleEngine {
         input.addKeyListener(keyListener);
     }
 
-    public ConsoleEngine() {
-        gui = new GuiImpl();
+    public ConsoleEngine(Gui newGui) {
+        ConsoleEngine.gui = newGui;
         setKeyListener();
         supportedCommands.add(new Help());
+        supportedCommands.add(new Stop());
+        supportedCommands.add(new Start());
     }
 
     public void startConsoleEngine() {

@@ -1,9 +1,14 @@
 package main.runner;
 
-import main.engine.BucketGuiMessage;
+import main.engine.console.gui.Gui;
+import main.engine.console.gui.GuiImpl;
+import main.engine.server.Chat;
+import main.engine.server.ChatEngine;
+import main.models.dto.LinkBucketGuiMessage;
 import main.engine.console.ConsoleEngine;
 import main.engine.console.models.GuiMessage;
-import main.engine.server.ChatEngine;
+import main.models.dto.LinkChatEngine;
+import main.models.dto.LinkGui;
 import main.models.user.User;
 
 import java.awt.*;
@@ -16,12 +21,21 @@ import java.util.concurrent.Executors;
 import static java.lang.String.format;
 import static main.utils.Constants.*;
 
+//TODO REFACTOR
 public class Run {
     private static final int SERVER_PORT = 800;
     private static final int THREAD_NUMBER = 2;
 
+    static LinkBucketGuiMessage bucket = new LinkBucketGuiMessage();
+    static Gui gui = new GuiImpl();
+    static Chat chat = new ChatEngine(bucket);
+    static {
+        LinkGui.setGui(gui);
+        LinkChatEngine.setChat(chat);
+    }
+
     private final ServerSocket server;
-    private final BucketGuiMessage bucketGuiMessages;
+    private final LinkBucketGuiMessage linkBucketGuiMessages;
     private final ConsoleEngine consoleEngine;
 
     private final Thread listenNewConnectionsThread;
@@ -30,9 +44,9 @@ public class Run {
 
     private static final ExecutorService appExecutor = Executors.newFixedThreadPool(THREAD_NUMBER);
 
-    private Run(ServerSocket server, ChatEngine chatEngine, BucketGuiMessage bucketGuiMessages, ConsoleEngine consoleEngine) {
+    private Run(ServerSocket server, ChatEngine chatEngine, LinkBucketGuiMessage linkBucketGuiMessages, ConsoleEngine consoleEngine) {
         this.server = server;
-        this.bucketGuiMessages = bucketGuiMessages;;
+        this.linkBucketGuiMessages = linkBucketGuiMessages;;
         this.consoleEngine = consoleEngine;
 
         this.listenNewConnectionsThread = new Thread(this::listenForConnections);
@@ -46,7 +60,7 @@ public class Run {
 
         GuiMessage consoleLeftGuiMessage =
                 new GuiMessage(format(MESSAGE_USER_JOIN, user.getTrip()), Color.red, true);
-        bucketGuiMessages.addMessage(consoleLeftGuiMessage);
+        linkBucketGuiMessages.addMessage(consoleLeftGuiMessage);
     }
 
     private void listenForConnections() {
@@ -67,17 +81,14 @@ public class Run {
 
         GuiMessage serverUpGuiMessage =
                 new GuiMessage(format(SERVER_ONLINE, server.getInetAddress(), SERVER_PORT), Color.GRAY, true);
-        bucketGuiMessages.addMessage(serverUpGuiMessage);
+        linkBucketGuiMessages.addMessage(serverUpGuiMessage);
     }
 
     public static void main(String[] args) {
         try {
             ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-            BucketGuiMessage bucketGuiMessage = new BucketGuiMessage();
-            ChatEngine chatEngine = new ChatEngine(bucketGuiMessage);
-            ConsoleEngine consoleEngine = new ConsoleEngine();
-
-            Run applicationServer = new Run(serverSocket, chatEngine, bucketGuiMessage, consoleEngine);
+            ConsoleEngine consoleEngine = new ConsoleEngine(gui);
+            Run applicationServer = new Run(serverSocket, (ChatEngine) chat, bucket, consoleEngine);
             applicationServer.startServer();
 
         } catch (Exception exception) {

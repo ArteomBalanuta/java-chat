@@ -1,6 +1,6 @@
 package main.engine.server;
 
-import main.engine.BucketGuiMessage;
+import main.models.dto.LinkBucketGuiMessage;
 import main.engine.console.models.GuiMessage;
 import main.models.message.UserMessage;
 import main.models.user.User;
@@ -19,21 +19,21 @@ import static main.utils.Constants.MESSAGE_USER_LEFT;
 import static main.utils.Utils.isNotNullOrEmpty;
 
 
-public class ChatEngine  {
+public class ChatEngine implements Chat  {
 
     private static final int USERS_MAX_NUMBER = 50;
     private static final int MESSAGES_MAX_NUMBER = 300;
     private static final int THREAD_NUMBER = 2;
 
-    private final ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
-    private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, true);
+    private static ScheduledExecutorService executorScheduler;
+    private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, false);
     private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 
-    public final BucketGuiMessage bucketGuiMessages;
+    public final LinkBucketGuiMessage linkBucketGuiMessages;
     private boolean isRunning = false;
 
-    public ChatEngine(BucketGuiMessage bucketGuiMessage){
-        bucketGuiMessages = bucketGuiMessage;
+    public ChatEngine(LinkBucketGuiMessage linkBucketGuiMessage){
+        linkBucketGuiMessages = linkBucketGuiMessage;
     };
 
     public static void saveUser(User user) {
@@ -102,7 +102,7 @@ public class ChatEngine  {
 
     private void printUserLeftMessage(User user){
         GuiMessage consoleLeftGuiMessage = new GuiMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()), Color.red, true);
-        bucketGuiMessages.addMessage(consoleLeftGuiMessage);
+        linkBucketGuiMessages.addMessage(consoleLeftGuiMessage);
     }
 
     public void checkUsersConnection() {
@@ -119,20 +119,19 @@ public class ChatEngine  {
     }
 
     public void start() {
-        isRunning = true;
-        executorScheduler.scheduleWithFixedDelay(this::getUserMessages, 0, 1, TimeUnit.MILLISECONDS);
-        executorScheduler.scheduleWithFixedDelay(this::shareUserMessages, 0, 1, TimeUnit.MILLISECONDS);
-        executorScheduler.scheduleWithFixedDelay(this::checkUsersConnection, 0, 3, TimeUnit.MILLISECONDS);
+        if (!isRunning) {
+            executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
+            executorScheduler.scheduleWithFixedDelay(this::getUserMessages, 0, 1, TimeUnit.MILLISECONDS);
+            executorScheduler.scheduleWithFixedDelay(this::shareUserMessages, 0, 1, TimeUnit.MILLISECONDS);
+            executorScheduler.scheduleWithFixedDelay(this::checkUsersConnection, 0, 3, TimeUnit.MILLISECONDS);
+            isRunning = true;
+        }
     }
 
     public void stop() {
-        try {
-            if (isRunning) {
-                executorScheduler.awaitTermination(2, TimeUnit.SECONDS);
-                isRunning = false;
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (isRunning) {
+            executorScheduler.shutdown();
+            isRunning = false;
         }
     }
 }
