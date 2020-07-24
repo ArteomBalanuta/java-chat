@@ -58,9 +58,9 @@ public class Run {
         User user = new User(socket);
         ChatEngine.saveUser(user);
 
-        GuiMessage consoleLeftGuiMessage =
+        GuiMessage consoleJoinGuiMessage =
                 new GuiMessage(format(MESSAGE_USER_JOIN, user.getTrip()), Color.red, true);
-        linkBucketGuiMessages.addMessage(consoleLeftGuiMessage);
+        linkBucketGuiMessages.addMessage(consoleJoinGuiMessage);
     }
 
     private void listenForConnections() {
