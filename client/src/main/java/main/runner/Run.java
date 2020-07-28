@@ -15,24 +15,11 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 
 public class Run {
-    private final Charset enc = ISO_8859_1;
-
-    private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-
-
     public static final String HOST_ADDRESS = "localhost";
     public static final int PORT = 800;
+    ConnectionImpl connection = new ConnectionImpl(HOST_ADDRESS, PORT);
 
-    private static volatile Socket connection;
-
-    private BufferedReader userReader;
-    private BufferedWriter userWriter;
-
-    private InputStreamReader inputStreamReader;
-    private OutputStreamWriter outputStreamWriter;
-
-    private InputStream is;
-    private OutputStream os;
+    private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
     private final List<String> msgOutQueue = new ArrayList<>();
     private final List<String> msgInQueue = new ArrayList<>();
@@ -40,23 +27,6 @@ public class Run {
     public static final int NUMBER_OF_THREADS = 4;
     private static final ExecutorService appExecutor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
     private static final ScheduledExecutorService executorScheduler = newScheduledThreadPool(NUMBER_OF_THREADS);;
-
-    private void connect(String host, int port) {
-        try {
-            connection = new Socket(host, port);
-
-            this.is = connection.getInputStream();
-            this.os = connection.getOutputStream();
-
-            this.inputStreamReader = new InputStreamReader(is, enc);
-            this.outputStreamWriter = new OutputStreamWriter(os, enc);
-
-            this.userReader = new BufferedReader(inputStreamReader);
-            this.userWriter = new BufferedWriter(outputStreamWriter);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     synchronized Optional<String> getFromQueue(List<String> queue) {
         Optional<String> msg = Optional.empty();
@@ -96,26 +66,13 @@ public class Run {
 
     //TODO FIX
     void sendMessage(String msg) {
-        if (msg != null) {
-            try {
-                userWriter.write(msg + "\n");
-                userWriter.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        connection.write(msg);
     }
 
     private void receiveMessages() {
-        try {
-            if (userReader.ready()) {
-                String msgBody = userReader.readLine();
-                if (msgBody != null && !msgBody.isEmpty()) {
-                    msgInQueue.add(msgBody.trim());
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        String msg = connection.read();
+        if (msg != null && !msg.isEmpty()) {
+            msgInQueue.add(msg.trim());
         }
     }
 
@@ -126,7 +83,6 @@ public class Run {
 
     public static void main(String[] args) {
         Run application = new Run();
-        application.connect(HOST_ADDRESS, PORT);
 
         appExecutor.submit(new Thread(application::readUserInput));
         appExecutor.submit(new Thread(application::sendUserMessages));
