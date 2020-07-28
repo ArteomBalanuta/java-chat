@@ -69,16 +69,16 @@ public class RSAUtil {
         return new String(Base64.getDecoder().decode(base64String));
     }
 
-    public static void main(String[] args) throws IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, BadPaddingException {
-        try {
-            String encryptedString = encodeBase64(encrypt("Dhiraj is the author", publicKey));
-            System.out.println(encryptedString);
-
-            String decryptedString = decodeBase64(decrypt(encryptedString, privateKey));
-            System.out.println(decryptedString);
-        } catch (NoSuchAlgorithmException e) {
-            System.err.println(e.getMessage());
-        }
-
-    }
+//    public static void main(String[] args) throws IllegalBlockSizeException, InvalidKeyException, NoSuchPaddingException, BadPaddingException {
+//        try {
+//            String encryptedString = encodeBase64(encrypt("Dhiraj is the author", publicKey));
+//            System.out.println(encryptedString);
+//
+//            String decryptedString = decodeBase64(decrypt(encryptedString, privateKey));
+//            System.out.println(decryptedString);
+//        } catch (NoSuchAlgorithmException e) {
+//            System.err.println(e.getMessage());
+//        }
+//
+//    }
 }

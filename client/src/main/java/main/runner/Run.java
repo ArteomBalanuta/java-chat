@@ -2,83 +2,134 @@ package main.runner;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
 
 public class Run {
+    private final Charset enc = ISO_8859_1;
+
     private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
+
+    public static final String HOST_ADDRESS = "localhost";
+    public static final int PORT = 800;
+
     private static volatile Socket connection;
-    private static DataOutputStream outputStream;
 
-    private static PrintStream out;
+    private BufferedReader userReader;
+    private BufferedWriter userWriter;
 
-    private final List<String> msgQueue = new ArrayList<>();
+    private InputStreamReader inputStreamReader;
+    private OutputStreamWriter outputStreamWriter;
 
-    void acquireConnection() {
+    private InputStream is;
+    private OutputStream os;
+
+    private final List<String> msgOutQueue = new ArrayList<>();
+    private final List<String> msgInQueue = new ArrayList<>();
+
+    public static final int NUMBER_OF_THREADS = 4;
+    private static final ExecutorService appExecutor = Executors.newFixedThreadPool(NUMBER_OF_THREADS);
+    private static final ScheduledExecutorService executorScheduler = newScheduledThreadPool(NUMBER_OF_THREADS);;
+
+    private void connect(String host, int port) {
         try {
-            connection = new Socket("localhost", 800);
-            outputStream = new DataOutputStream(connection.getOutputStream());
+            connection = new Socket(host, port);
+
+            this.is = connection.getInputStream();
+            this.os = connection.getOutputStream();
+
+            this.inputStreamReader = new InputStreamReader(is, enc);
+            this.outputStreamWriter = new OutputStreamWriter(os, enc);
+
+            this.userReader = new BufferedReader(inputStreamReader);
+            this.userWriter = new BufferedWriter(outputStreamWriter);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    synchronized String getFromQueue() {
-        String msg = null;
-        if (msgQueue.size() != 0) {
-            msg = msgQueue.get(msgQueue.size() - 1);
-            msgQueue.remove(msgQueue.size() - 1);
+    synchronized Optional<String> getFromQueue(List<String> queue) {
+        Optional<String> msg = Optional.empty();
+        if (queue.size() != 0) {
+            msg = Optional.ofNullable(queue.get(queue.size() - 1));
+            queue.remove(queue.size() - 1);
         }
         return msg;
     }
 
-    void addMsg() {
-        while (true) {
-            try {
-                Thread.sleep(50);
+    void readUserInput(){
+        executorScheduler.scheduleWithFixedDelay(this::readFromInput, 0, 3, TimeUnit.MILLISECONDS);
+    }
 
-                String msg = reader.readLine();
-                msgQueue.add(msg);
-            } catch (InterruptedException | IOException e) {
-                e.printStackTrace();
-            }
+    void sendUserMessages(){
+        executorScheduler.scheduleWithFixedDelay(this::sendMessages, 0, 3, TimeUnit.MILLISECONDS);
+    }
+
+    void printIncomeMessages(){
+        executorScheduler.scheduleWithFixedDelay(this::receiveMessages, 0, 3, TimeUnit.MILLISECONDS);
+        executorScheduler.scheduleWithFixedDelay(this::printInMessages, 0, 3, TimeUnit.MILLISECONDS);
+    }
+
+    void readFromInput() {
+        try {
+            String msg = reader.readLine();
+            msgOutQueue.add(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    void getSendLoop() {
-        while (true) {
-            try {
-                Thread.sleep(20);
-                String toSend = getFromQueue();
-                sendMessage(toSend);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+    void sendMessages() {
+        Optional<String> toSend = getFromQueue(msgOutQueue);
+        sendMessage(toSend.orElse(null));
     }
 
-    static void sendMessage(String msg) {
+    //TODO FIX
+    void sendMessage(String msg) {
         if (msg != null) {
             try {
-                System.out.println("S: " + msg);
-                outputStream.writeUTF(msg);
-                outputStream.flush();
+                userWriter.write(msg + "\n");
+                userWriter.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    private void receiveMessages() {
+        try {
+            if (userReader.ready()) {
+                String msgBody = userReader.readLine();
+                if (msgBody != null && !msgBody.isEmpty()) {
+                    msgInQueue.add(msgBody.trim());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void printInMessages(){
+        Optional<String> msg = getFromQueue(msgInQueue);
+        msg.ifPresent(System.out::println);
+    }
+
     public static void main(String[] args) {
         Run application = new Run();
-        application.acquireConnection();
+        application.connect(HOST_ADDRESS, PORT);
 
-        //read and enqueue msg
-        new Thread(application::addMsg).start();
-
-        //send
-        new Thread(application::getSendLoop).start();
-
+        appExecutor.submit(new Thread(application::readUserInput));
+        appExecutor.submit(new Thread(application::sendUserMessages));
+        appExecutor.submit(new Thread(application::printIncomeMessages));
     }
 }

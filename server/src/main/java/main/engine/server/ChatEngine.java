@@ -25,7 +25,7 @@ public class ChatEngine implements Chat  {
     private static final int MESSAGES_MAX_NUMBER = 300;
     private static final int THREAD_NUMBER = 2;
 
-    private static ScheduledExecutorService executorScheduler;
+    private static ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);;
     private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, false);
     private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 
@@ -120,7 +120,6 @@ public class ChatEngine implements Chat  {
 
     public void start() {
         if (!isRunning) {
-            executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
             executorScheduler.scheduleWithFixedDelay(this::getUserMessages, 0, 1, TimeUnit.MILLISECONDS);
             executorScheduler.scheduleWithFixedDelay(this::shareUserMessages, 0, 1, TimeUnit.MILLISECONDS);
             executorScheduler.scheduleWithFixedDelay(this::checkUsersConnection, 0, 3, TimeUnit.MILLISECONDS);
