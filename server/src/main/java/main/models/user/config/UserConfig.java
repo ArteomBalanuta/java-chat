@@ -18,7 +18,6 @@ public class UserConfig {
 
     public String trip;
     private Socket connection;
-    private String publicKey;
 
     private BufferedReader userReader;
     private BufferedWriter userWriter;

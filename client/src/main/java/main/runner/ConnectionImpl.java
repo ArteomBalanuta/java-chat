@@ -12,41 +12,40 @@ public class ConnectionImpl {
 
     private static volatile Socket connection;
 
-    private BufferedReader userReader;
-    private BufferedWriter userWriter;
+    private static BufferedReader userReader;
+    private static BufferedWriter userWriter;
 
-    private InputStreamReader inputStreamReader;
-    private OutputStreamWriter outputStreamWriter;
+    private static InputStreamReader inputStreamReader;
+    private static OutputStreamWriter outputStreamWriter;
 
-    private InputStream is;
-    private OutputStream os;
+    private static InputStream is;
+    private static OutputStream os;
 
     public ConnectionImpl(String host, int port) {
         try {
             connection = new Socket(host, port);
 
-            this.is = connection.getInputStream();
-            this.os = connection.getOutputStream();
+            is = connection.getInputStream();
+            os = connection.getOutputStream();
 
-            this.inputStreamReader = new InputStreamReader(is, enc);
-            this.outputStreamWriter = new OutputStreamWriter(os, enc);
+            inputStreamReader = new InputStreamReader(is, enc);
+            outputStreamWriter = new OutputStreamWriter(os, enc);
 
-            this.userReader = new BufferedReader(inputStreamReader);
-            this.userWriter = new BufferedWriter(outputStreamWriter);
+            userReader = new BufferedReader(inputStreamReader);
+            userWriter = new BufferedWriter(outputStreamWriter);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void write(String msg) {
-        if (msg != null) {
             try {
-                userWriter.write(msg ); // + ((byte) 0x00)
+                userWriter.flush();
+                userWriter.write(msg + '\n');
                 userWriter.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
     }
 
     public String read() {
