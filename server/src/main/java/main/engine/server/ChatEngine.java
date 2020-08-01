@@ -35,7 +35,6 @@ public class ChatEngine implements Chat {
     private static final int THREAD_NUMBER = 2;
 
     private static ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
-    ;
     private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, false);
     private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 

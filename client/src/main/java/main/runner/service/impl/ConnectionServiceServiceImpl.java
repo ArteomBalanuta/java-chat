@@ -1,29 +1,33 @@
-package main.runner;
+package main.runner.service.impl;
+
+import main.runner.service.ConnectionService;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.Charset;
 
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
+public class ConnectionServiceServiceImpl implements ConnectionService {
+    //ISO_8859_1
+    private Charset enc;
 
-public class ConnectionImpl {
-    //TODO move out here
-    private final Charset enc = ISO_8859_1;
+    private Socket connection;
 
-    private static volatile Socket connection;
+    private BufferedReader userReader;
+    private BufferedWriter userWriter;
 
-    private static BufferedReader userReader;
-    private static BufferedWriter userWriter;
+    private InputStreamReader inputStreamReader;
+    private OutputStreamWriter outputStreamWriter;
 
-    private static InputStreamReader inputStreamReader;
-    private static OutputStreamWriter outputStreamWriter;
+    private InputStream is;
+    private OutputStream os;
 
-    private static InputStream is;
-    private static OutputStream os;
+    public void setEnc(Charset enc) {
+        this.enc = enc;
+    }
 
-    public ConnectionImpl(String host, int port) {
+    public void setConnection(String host, int port) {
         try {
-            connection = new Socket(host, port);
+            this.connection = new Socket(host, port);
 
             is = connection.getInputStream();
             os = connection.getOutputStream();
@@ -39,13 +43,13 @@ public class ConnectionImpl {
     }
 
     public void write(String msg) {
-            try {
-                userWriter.flush();
-                userWriter.write(msg + '\n');
-                userWriter.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            userWriter.flush();
+            userWriter.write(msg + '\n');
+            userWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public String read() {
