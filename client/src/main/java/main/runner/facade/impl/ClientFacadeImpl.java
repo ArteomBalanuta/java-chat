@@ -1,12 +1,8 @@
 package main.runner.facade.impl;
 
 import main.runner.facade.ClientFacade;
-import main.runner.service.ConnectionService;
-import main.runner.service.KeyService;
-import main.runner.service.RSAService;
-import main.runner.service.impl.ConnectionServiceServiceImpl;
-import main.runner.service.impl.KeyServiceImpl;
-import main.runner.service.impl.RSAServiceImpl;
+import main.runner.service.*;
+import main.runner.service.impl.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,30 +21,19 @@ public class ClientFacadeImpl implements ClientFacade {
     private final ConnectionService connectionService = new ConnectionServiceServiceImpl();
     private final KeyService keyService = new KeyServiceImpl();
     private final RSAService rsaService = new RSAServiceImpl();
+    private final PrintService printService = new PrintServiceImpl();
+    private final ReadService readService = new ReadServiceImpl();
 
-    private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
     public static final int CAPACITY = 300;
-    private static BlockingQueue<String> msgOutQueue = new ArrayBlockingQueue<>(CAPACITY, false);
-    private static BlockingQueue<String> msgInQueue = new ArrayBlockingQueue<>(CAPACITY, false);
+
+    //TODO FIX public
+    public static BlockingQueue<String> msgOutQueue = new ArrayBlockingQueue<>(CAPACITY, false);
+    public static BlockingQueue<String> msgInQueue = new ArrayBlockingQueue<>(CAPACITY, false);
+
     public static final int NUMBER_OF_THREADS = 2;
     private static final ExecutorService appExecutor = Executors.newFixedThreadPool(1);
     private static final ScheduledExecutorService scheduler = newScheduledThreadPool(NUMBER_OF_THREADS);
-
-    //TODO FIX
-    void readFromInput() {
-        try {
-            String msg = reader.readLine();
-            if (msg != null) {
-                if (keyService.getSharedKey() != null) {
-                    Base64.Encoder encoder = Base64.getEncoder();
-                    msg = new String(encoder.encode(rsaService.encryptMessage(msg)));
-                }
-                msgOutQueue.add(msg);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     void sendMessages() {
         try {
@@ -78,33 +63,17 @@ public class ClientFacadeImpl implements ClientFacade {
                 keyService.setServerPublicKey(serverPublicKey);
                 keyService.generateSharedKey();
                 System.out.println("Shared key has been set!");
+                System.out.println("[ClientFacade] Got server public key: " + msg);
+                return;
             }
 
             msgInQueue.add(msg);
         }
     }
 
-    private void printInMessages() {
-        try {
-            if (msgInQueue.size() != 0) {
-                String rawMsg = msgInQueue.take();
-                if (keyService.getSharedKey() != null) {
-                    System.out.println("string: " + rawMsg);
-
-                    rawMsg = rsaService.decryptMessage(Base64.getDecoder().decode(rawMsg));
-                    System.out.println("true");
-                }
-                System.out.println(rawMsg);
-            }
-        } catch (Exception e) {
-            System.out.println("false");
-            e.printStackTrace();
-        }
-    }
-
     void outStart() {
         new Thread(() -> {
-            scheduler.scheduleWithFixedDelay(this::readFromInput, 0, 10, TimeUnit.MILLISECONDS);
+            scheduler.scheduleWithFixedDelay(readService::readUserInput, 0, 10, TimeUnit.MILLISECONDS);
             scheduler.scheduleWithFixedDelay(this::sendMessages, 0, 10, TimeUnit.MILLISECONDS);
         }).start();
     }
@@ -112,7 +81,7 @@ public class ClientFacadeImpl implements ClientFacade {
     void inStart() {
         new Thread(() -> {
             scheduler.scheduleWithFixedDelay(this::receiveMessages, 0, 10, TimeUnit.MILLISECONDS);
-            scheduler.scheduleWithFixedDelay(this::printInMessages, 0, 10, TimeUnit.MILLISECONDS);
+            scheduler.scheduleWithFixedDelay(printService::printInMessages, 0, 10, TimeUnit.MILLISECONDS);
         }).start();
     }
 
@@ -124,6 +93,8 @@ public class ClientFacadeImpl implements ClientFacade {
         keyService.saveKeysOnDisk(keys);
         String msgPublicKey = keyService.getClientPublicKeyInBase64ToBeSentToServer();
         rsaService.setKeyService(keyService);
+        printService.setRSAAndKeyServices(rsaService, keyService);
+        readService.setRSAServiceAndKeyService(rsaService, keyService);
         this.sendMessage(msgPublicKey);
     }
 
