@@ -1,15 +1,16 @@
 package main.models.dto;
 
-import main.engine.console.gui.Gui;
+import main.engine.console.service.GUIService;
 
+//TODO FIX
 public class LinkGui {
-    private static Gui gui;
+    private static GUIService guiService;
 
-    public static void setGui(Gui gui) {
-        LinkGui.gui = gui;
+    public static void setGuiService(GUIService guiService) {
+        LinkGui.guiService = guiService;
     }
 
-    public static Gui getGui() {
-        return gui;
+    public static GUIService getGuiService() {
+        return guiService;
     }
 }

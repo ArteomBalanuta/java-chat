@@ -8,21 +8,23 @@ public interface KeyService {
 
     KeyPair getKeys();
 
+    void setKeys(KeyPair keys);
+
     PublicKey getPublicKey();
 
     PrivateKey getPrivateKey();
 
     PublicKey getServerPublicKey();
 
-    byte[] getSharedKey();
-
-    void setKeys(KeyPair keys);
-
-    void generateSharedKey();
-    KeyPair generateKeys();
-
     void setServerPublicKey(byte[] serverPublicKeyBytes);
 
+    byte[] getSharedKey();
+
+    void generateSharedKey();
+
+    KeyPair generateKeys();
+
     void saveKeysOnDisk(KeyPair keys);
+
     String getClientPublicKeyInBase64ToBeSentToServer();
 }

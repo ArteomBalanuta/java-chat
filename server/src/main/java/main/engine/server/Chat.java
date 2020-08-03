@@ -1,6 +1,7 @@
 package main.engine.server;
 
+//TODO FIX
 public interface Chat {
-    public void stop();
-    public void start();
+    void stop();
+    void start();
 }

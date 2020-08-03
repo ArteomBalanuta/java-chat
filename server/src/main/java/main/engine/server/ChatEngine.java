@@ -1,6 +1,7 @@
 package main.engine.server;
 
-import main.engine.console.models.GuiMessage;
+import main.engine.console.facade.GUIFacade;
+import main.engine.console.models.GUIMessage;
 import main.models.dto.LinkBucketGuiMessage;
 import main.models.message.UserMessage;
 import main.models.user.User;
@@ -25,8 +26,9 @@ import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static main.utils.Constants.MESSAGE_USER_LEFT;
 import static main.utils.Utils.isNotNullOrEmpty;
 
-
+//TODO FIX
 public class ChatEngine implements Chat {
+
     private PrivateKey serverPrivateKey;
     private PublicKey serverPublicKey;
 
@@ -162,8 +164,8 @@ public class ChatEngine implements Chat {
     }
 
     private void printUserLeftMessage(User user) {
-        GuiMessage consoleLeftGuiMessage = new GuiMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()), Color.red, true);
-        linkBucketGuiMessages.addMessage(consoleLeftGuiMessage);
+        GUIMessage consoleLeftGUIMessage = new GUIMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()), Color.red, true);
+        linkBucketGuiMessages.addMessage(consoleLeftGUIMessage);
     }
 
     public void checkUsersConnection() {

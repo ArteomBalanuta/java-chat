@@ -4,13 +4,25 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
+//TODO FIX
 public class UserMessage {
+    private final char space = ' ';
+    private final char separator = ':';
+
     private String owner;
     private String body;
     private String message;
 
     public UserMessage() {
+    }
+
+    public UserMessage(String owner, String body) {
+        this.owner = owner;
+        this.body = body;
+        this.message = this.owner +
+                separator +
+                space +
+                body;
     }
 
     public String getOwner() {
@@ -35,26 +47,6 @@ public class UserMessage {
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    private final char space = ' ';
-    private final char separator = ':';
-
-
-    public void rebuild(){
-        this.message = this.owner +
-                separator +
-                space +
-                body;
-    };
-
-    public UserMessage(String owner, String body) {
-        this.owner = owner;
-        this.body = body;
-        this.message = this.owner +
-                separator +
-                space +
-                body;
     }
 }
 

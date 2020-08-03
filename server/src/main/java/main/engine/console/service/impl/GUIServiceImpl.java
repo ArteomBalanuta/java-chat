@@ -1,6 +1,7 @@
-package main.engine.console.gui;
+package main.engine.console.service.impl;
 
-import main.engine.console.models.GuiMessage;
+import main.engine.console.models.GUIMessage;
+import main.engine.console.service.GUIService;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -11,17 +12,19 @@ import static javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED;
 import static javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED;
 import static main.utils.Constants.*;
 
-public class GuiImpl implements Gui {
-    protected final static JFrame mainFrame = new JFrame(SERVER_NAME);
-    protected final static JPanel panel = new JPanel();
 
-    protected final static JTextField input = new JTextField();
-    protected final static JTextPane output = new JTextPane();
+//TODO FIX
+public class GUIServiceImpl implements GUIService {
+    private final static JFrame mainFrame = new JFrame(SERVER_NAME);
+    private final static JPanel panel = new JPanel();
+
+    private final static JTextField input = new JTextField();
+    private final static JTextPane output = new JTextPane();
 
     private final static JScrollPane scroll =
             new JScrollPane(output, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-    public GuiImpl() {
+    public GUIServiceImpl() {
         final Color myBackgroundColor = new Color(0, 0, 0);
         final Color myForegroundColor = new Color(59, 59, 59);
 
@@ -49,7 +52,7 @@ public class GuiImpl implements Gui {
         input.requestFocus();
     }
 
-    public void print(GuiMessage guiMessage) {
+    public void print(GUIMessage guiMessage) {
         StyleContext sc = StyleContext.getDefaultStyleContext();
         AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, guiMessage.getMessageColor());
 
@@ -82,4 +85,3 @@ public class GuiImpl implements Gui {
         return input;
     }
 }
-

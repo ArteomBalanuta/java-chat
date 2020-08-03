@@ -14,6 +14,7 @@ import java.util.concurrent.*;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 
+//TODO FIX
 public class ClientFacadeImpl implements ClientFacade {
     private final String HOST_ADDRESS = "localhost";
     private final int PORT = 800;
@@ -23,7 +24,6 @@ public class ClientFacadeImpl implements ClientFacade {
     private final RSAService rsaService = new RSAServiceImpl();
     private final PrintService printService = new PrintServiceImpl();
     private final ReadService readService = new ReadServiceImpl();
-
 
     public static final int CAPACITY = 300;
 
