@@ -41,10 +41,19 @@ public class GUIFacadeImpl implements GUIFacade {
         cmdService.execute();
     }
 
+    //TODO: MOVE SOMEWHERE SET UP KEY LISTENER
     public void startConsole() {
+        cmdService.setUpKeyListener();
         executorScheduler.scheduleWithFixedDelay(this::printMessages, 0, 2, TimeUnit.MILLISECONDS);
         executorScheduler.scheduleWithFixedDelay(this::executeCMDs, 0, 2, TimeUnit.MILLISECONDS);
     }
 
 
+    public GUIService getGuiService() {
+        return guiService;
+    }
+
+    public GUIMessageService getGuiMessageService() {
+        return guiMessageService;
+    }
 }

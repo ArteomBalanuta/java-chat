@@ -1,13 +1,12 @@
 package main;
 
-import main.engine.console.service.GUIService;
-import main.engine.console.service.impl.GUIServiceImpl;
+import main.engine.console.facade.GUIFacade;
+import main.engine.console.facade.impl.GUIFacadeImpl;
+import main.engine.console.models.GUIMessage;
+import main.engine.console.models.command.Command;
+import main.engine.console.service.GUIMessageService;
 import main.engine.server.Chat;
 import main.engine.server.ChatEngine;
-import main.models.dto.LinkBucketGuiMessage;
-import main.engine.console.models.GUIMessage;
-import main.models.dto.LinkChatEngine;
-import main.models.dto.LinkGui;
 import main.models.user.User;
 
 import java.awt.*;
@@ -18,39 +17,32 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static java.lang.String.format;
-import static main.utils.Constants.*;
+import static main.utils.Constants.MESSAGE_USER_JOIN;
+import static main.utils.Constants.SERVER_ONLINE;
 
 //TODO REFACTOR
 public class Run {
     private static final int SERVER_PORT = 800;
     private static final int THREAD_NUMBER = 2;
 
-    static LinkBucketGuiMessage bucket = new LinkBucketGuiMessage();
-    static GUIService guiService = new GUIServiceImpl();
-    static Chat chat = new ChatEngine(bucket);
-    static {
-        LinkGui.setGuiService(guiService);
-        LinkChatEngine.setChat(chat);
-    }
+    private ServerSocket serverSocket;
+    private GUIFacade guiFacade = new GUIFacadeImpl();
 
-    private final ServerSocket server;
-    private final LinkBucketGuiMessage linkBucketGuiMessages;
-    private final ConsoleEngine consoleEngine;
+    private GUIMessageService bucket = guiFacade.getGuiMessageService();
+    private Chat chat = new ChatEngine(bucket);
 
-    private final Thread listenNewConnectionsThread;
-    private final Thread engineThread;
-    private final Thread consoleThread;
+    private Thread listenNewConnectionsThread = new Thread(this::listenForConnections);
+    private Thread engineThread = new Thread(chat::start);
+    private Thread consoleThread = new Thread(guiFacade::startConsole);
 
     private static final ExecutorService appExecutor = Executors.newFixedThreadPool(THREAD_NUMBER);
 
-    private Run(ServerSocket server, ChatEngine chatEngine, LinkBucketGuiMessage linkBucketGuiMessages, ConsoleEngine consoleEngine) {
-        this.server = server;
-        this.linkBucketGuiMessages = linkBucketGuiMessages;;
-        this.consoleEngine = consoleEngine;
-
-        this.listenNewConnectionsThread = new Thread(this::listenForConnections);
-        this.engineThread = new Thread(chatEngine::start);
-        this.consoleThread = new Thread(consoleEngine::startConsoleEngine);
+    void setUp() {
+        try {
+            this.serverSocket = new ServerSocket(SERVER_PORT);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void saveUser(Socket socket) {
@@ -59,13 +51,13 @@ public class Run {
 
         GUIMessage consoleJoinGUIMessage =
                 new GUIMessage(format(MESSAGE_USER_JOIN, user.getTrip()), Color.red, true);
-        linkBucketGuiMessages.addMessage(consoleJoinGUIMessage);
+        bucket.addMessage(consoleJoinGUIMessage);
     }
 
     private void listenForConnections() {
         while (true) {
             try {
-                Socket socket = server.accept();
+                Socket socket = serverSocket.accept();
                 saveUser(socket);
             } catch (IOException ioException) {
                 ioException.printStackTrace();
@@ -79,15 +71,16 @@ public class Run {
         appExecutor.submit(consoleThread);
 
         GUIMessage serverUpGUIMessage =
-                new GUIMessage(format(SERVER_ONLINE, server.getInetAddress(), SERVER_PORT), Color.GRAY, true);
-        linkBucketGuiMessages.addMessage(serverUpGUIMessage);
+                new GUIMessage(format(SERVER_ONLINE, serverSocket.getInetAddress(), SERVER_PORT), Color.GRAY, true);
+        bucket.addMessage(serverUpGUIMessage);
     }
 
     public static void main(String[] args) {
         try {
-            ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-            ConsoleEngine consoleEngine = new ConsoleEngine(guiService);
-            Run applicationServer = new Run(serverSocket, (ChatEngine) chat, bucket, consoleEngine);
+            Run applicationServer = new Run();
+            //TODO FIX!
+            Command.setUp(applicationServer.guiFacade.getGuiService(), applicationServer.chat);
+            applicationServer.setUp();
             applicationServer.startServer();
 
         } catch (Exception exception) {

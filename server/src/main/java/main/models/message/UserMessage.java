@@ -1,9 +1,5 @@
 package main.models.message;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 //TODO FIX
 public class UserMessage {
     private final char space = ' ';

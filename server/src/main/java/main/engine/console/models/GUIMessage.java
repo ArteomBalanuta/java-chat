@@ -3,7 +3,7 @@ package main.engine.console.models;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.awt.Color;
+import java.awt.*;
 
 @Getter
 @Setter

@@ -1,8 +1,8 @@
 package main.engine.console.models.command;
 
-import java.awt.*;
-
 import main.engine.console.models.GUIMessage;
+
+import java.awt.*;
 
 public class Help extends Command {
     private String cmd = "help";

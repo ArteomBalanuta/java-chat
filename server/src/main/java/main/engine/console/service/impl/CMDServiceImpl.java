@@ -30,6 +30,7 @@ public class CMDServiceImpl implements CMDService {
 
     private GUIService guiService;
 
+    //TODO: Chat should not be injected here!
     public CMDServiceImpl(GUIService guiService){
         this.guiService = guiService;
     }

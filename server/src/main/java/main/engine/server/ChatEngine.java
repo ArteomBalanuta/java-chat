@@ -1,8 +1,7 @@
 package main.engine.server;
 
-import main.engine.console.facade.GUIFacade;
 import main.engine.console.models.GUIMessage;
-import main.models.dto.LinkBucketGuiMessage;
+import main.engine.console.service.GUIMessageService;
 import main.models.message.UserMessage;
 import main.models.user.User;
 
@@ -40,11 +39,11 @@ public class ChatEngine implements Chat {
     private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, false);
     private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 
-    public final LinkBucketGuiMessage linkBucketGuiMessages;
+    public final GUIMessageService guiMessageService;
     private boolean isRunning = false;
 
-    public ChatEngine(LinkBucketGuiMessage linkBucketGuiMessage) {
-        linkBucketGuiMessages = linkBucketGuiMessage;
+    public ChatEngine(GUIMessageService guiMessageService) {
+        this.guiMessageService = guiMessageService;
         this.generateKeys();
     }
 
@@ -165,7 +164,7 @@ public class ChatEngine implements Chat {
 
     private void printUserLeftMessage(User user) {
         GUIMessage consoleLeftGUIMessage = new GUIMessage(String.format(MESSAGE_USER_LEFT, user.getTrip()), Color.red, true);
-        linkBucketGuiMessages.addMessage(consoleLeftGUIMessage);
+        guiMessageService.addMessage(consoleLeftGUIMessage);
     }
 
     public void checkUsersConnection() {
