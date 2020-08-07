@@ -16,10 +16,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static main.utils.Constants.MESSAGE_USER_LEFT;
@@ -35,12 +32,18 @@ public class ChatEngine implements Chat {
     private static final int MESSAGES_MAX_NUMBER = 300;
     private static final int THREAD_NUMBER = 2;
 
+    private static Runnable readShareRunnable;
+
     private static ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
     private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, false);
     private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
 
     public final GUIMessageService guiMessageService;
-    private boolean isRunning = false;
+    private volatile boolean isRunning = true;
+
+    private ScheduledFuture<?> scheduledFutureGetUserMessages = null;
+    private ScheduledFuture<?> scheduledFutureShareUserMessages = null;
+    private ScheduledFuture<?> scheduledFutureCheckUserConnections = null;
 
     public ChatEngine(GUIMessageService guiMessageService) {
         this.guiMessageService = guiMessageService;
@@ -94,7 +97,7 @@ public class ChatEngine implements Chat {
                     if (msgBody.contains("publicKey ")) {
                         int keyOffset = msgBody.indexOf("publicKey ") + 10;
                         byte[] key = msgBody.substring(keyOffset).getBytes();
-                        if(validatePublicKey(key)){
+                        if (validatePublicKey(key)) {
                             setUserPublicKey(user, Base64.getDecoder().decode(key));
                             userMessage = new UserMessage(user.getTrip(), "exchanged public key!");
                             shareServerPublicKey(user);
@@ -139,7 +142,7 @@ public class ChatEngine implements Chat {
             if (user.getSharedKey() != null) {
                 msgToSend = new String(Base64.getEncoder().encode(encryptMessage(user, msg)));
             }
-            userWriter.write(msgToSend +'\n');
+            userWriter.write(msgToSend + '\n');
             userWriter.flush();
         } catch (IOException e) {
             userLeftNotify(user);
@@ -179,7 +182,6 @@ public class ChatEngine implements Chat {
             }
         });
     }
-
 
     public byte[] encryptMessage(User user, final String message) {
         byte[] encryptedMessage = new byte[0];
@@ -267,18 +269,67 @@ public class ChatEngine implements Chat {
         return null;
     }
 
+    private void cancelReceiveAndShareMessageSchedulers(){
+        boolean interrupted = false;
+        try {
+            while (scheduledFutureGetUserMessages == null ||
+                    scheduledFutureShareUserMessages == null) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
+            scheduledFutureGetUserMessages.cancel(false);
+            scheduledFutureShareUserMessages.cancel(false);
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    //TODO: make sure it is not broken
+    public void run() {
+        new Thread(() -> {
+            readShareRunnable = () -> {
+                scheduledFutureGetUserMessages = executorScheduler.scheduleWithFixedDelay(this::getUserMessages, 0, 10, TimeUnit.MILLISECONDS);
+                scheduledFutureShareUserMessages = executorScheduler.scheduleWithFixedDelay(this::shareUserMessages, 0, 10, TimeUnit.MILLISECONDS);
+            };
+            readShareRunnable.run();
+
+            scheduledFutureCheckUserConnections = executorScheduler.scheduleWithFixedDelay(this::checkUsersConnection, 0, 10, TimeUnit.MILLISECONDS);
+            while (true) {
+                try {
+                    Thread.sleep(100);
+                    boolean isNotRunningAndSchedulersNotCancelled = !isRunning &&
+                            !scheduledFutureGetUserMessages.isCancelled() &&
+                            !scheduledFutureShareUserMessages.isCancelled();
+                    if (isNotRunningAndSchedulersNotCancelled) {
+                        cancelReceiveAndShareMessageSchedulers();
+                    }
+
+                    boolean isRunningAndSchedulersCancelled = isRunning &&
+                            scheduledFutureGetUserMessages.isCancelled() &&
+                            scheduledFutureShareUserMessages.isCancelled();
+                    if (isRunningAndSchedulersCancelled) {
+                        readShareRunnable.run();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
     public void start() {
         if (!isRunning) {
-            executorScheduler.scheduleWithFixedDelay(this::getUserMessages, 0, 1, TimeUnit.MILLISECONDS);
-            executorScheduler.scheduleWithFixedDelay(this::shareUserMessages, 0, 1, TimeUnit.MILLISECONDS);
-            executorScheduler.scheduleWithFixedDelay(this::checkUsersConnection, 0, 3, TimeUnit.MILLISECONDS);
             isRunning = true;
         }
     }
 
     public void stop() {
         if (isRunning) {
-            executorScheduler.shutdown();
             isRunning = false;
         }
     }

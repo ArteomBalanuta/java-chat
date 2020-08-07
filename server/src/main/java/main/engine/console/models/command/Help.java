@@ -12,7 +12,7 @@ public class Help extends Command {
         GUIMessage guiMessage = new GUIMessage(cmd, Color.GRAY, true);
         guiService.print(guiMessage);
 
-        guiMessage = new GUIMessage(" start, stop - to start,stop spreading messages across users", Color.GRAY, true);
+        guiMessage = new GUIMessage(" start, stop - starts, stops sharing messages across users", Color.GRAY, true);
         guiService.print(guiMessage);
     }
 

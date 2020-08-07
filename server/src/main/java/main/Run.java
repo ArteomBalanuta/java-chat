@@ -32,7 +32,7 @@ public class Run {
     private Chat chat = new ChatEngine(bucket);
 
     private Thread listenNewConnectionsThread = new Thread(this::listenForConnections);
-    private Thread engineThread = new Thread(chat::start);
+    private Thread engineThread = new Thread(chat::run);
     private Thread consoleThread = new Thread(guiFacade::startConsole);
 
     private static final ExecutorService appExecutor = Executors.newFixedThreadPool(THREAD_NUMBER);

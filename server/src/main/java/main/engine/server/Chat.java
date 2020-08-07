@@ -4,4 +4,5 @@ package main.engine.server;
 public interface Chat {
     void stop();
     void start();
+    void run();
 }
