@@ -33,7 +33,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>main.Run</mainClass>
+                            <mainClass>main.server.Run</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
