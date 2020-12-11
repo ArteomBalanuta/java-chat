@@ -16,7 +16,7 @@ public class ClientFacadeImpl implements ClientFacade {
     private final String HOST_ADDRESS = "localhost";
     private final int PORT = 800;
 
-    private final ConnectionService connectionService = new ConnectionServiceServiceImpl();
+    private final ConnectionService connectionService = new ConnectionServiceImpl();
     private final KeyService keyService = new KeyServiceImpl();
     private final RSAService rsaService = new RSAServiceImpl();
     private final PrintService printService = new PrintServiceImpl();

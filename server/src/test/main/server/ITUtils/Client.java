@@ -1,15 +1,12 @@
-package main.client.service.impl;
-
-import main.client.service.ConnectionService;
+package main.server.ITUtils;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.Charset;
 
-public class ConnectionServiceServiceImpl implements ConnectionService {
+public class Client {
     //ISO_8859_1
     private Charset enc;
-
     private Socket connection;
 
     private BufferedReader userReader;

@@ -21,6 +21,10 @@ public class UserMessage {
                 body;
     }
 
+    public boolean isKeyExchangeMessage(){
+        return this.body.contains("publicKey ");
+    }
+
     public String getOwner() {
         return owner;
     }

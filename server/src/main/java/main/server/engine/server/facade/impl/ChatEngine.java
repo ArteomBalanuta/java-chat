@@ -11,15 +11,14 @@ import main.server.models.message.UserMessage;
 import main.server.models.user.User;
 
 import java.awt.*;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static main.server.utils.Constants.MESSAGE_USER_LEFT;
-import static main.server.utils.Utils.isNotNullOrEmpty;
 
 //TODO FIX
 public class ChatEngine implements Chat {
@@ -74,38 +73,63 @@ public class ChatEngine implements Chat {
         }
     }
 
-    //TODO FIX
     private void getUserMessage(User user) {
-        try {
-            BufferedReader reader = user.getUserReader();
-            if (reader.ready()) {
-                String msgBody = reader.readLine().trim();
-                if (isNotNullOrEmpty(msgBody)) {
-                    UserMessage userMessage = new UserMessage(user.getTrip(), msgBody);
-                    if (msgBody.contains("publicKey ")) {
-                        int keyOffset = msgBody.indexOf("publicKey ") + 10;
-                        byte[] key = msgBody.substring(keyOffset).getBytes();
-                        if (keyService.validatePublicKey(key)) {
-                            keyService.setUserPublicKey(user, Base64.getDecoder().decode(key));
-                            userMessage = new UserMessage(user.getTrip(), "exchanged public key!");
-                            keyService.shareServerPublicKeyToUser(user);
-                            keyService.generateAndSetSharedKeyToUser(user);
-                        } else {
-                            userMessage = new UserMessage(user.getTrip(), "key exchange failed!");
-                        }
-                        messageQueueBuffer.put(userMessage);
-                        return;
-                    }
+        Optional<UserMessage> userMessageOptional = user.getMessage();
+        if (userMessageOptional.isEmpty()) {
+            return;
+        }
 
-                    if (user.getSharedKey() != null) {
-                        userMessage.setBody(rsaService.decryptMessage(user, Base64.getDecoder().decode(userMessage.getBody())));
-                    }
-                    messageQueueBuffer.put(userMessage);
-                }
+        UserMessage userMessage = userMessageOptional.get();
+        boolean isPublicKeyExchangeMessage = userMessage.isKeyExchangeMessage();
+
+        if (isPublicKeyExchangeMessage) {
+            proceedKeyMessage(user, userMessage);
+            return;
+        }
+
+        boolean isSharedKeyPresent = user.getSharedKey() != null;
+        if (isSharedKeyPresent) {
+            userMessage.setBody(
+                    rsaService.decryptMessage(user, Base64.getDecoder().decode(userMessage.getBody()))
+            );
+        }
+
+        addMessageToMessageQueue(userMessage);
+    }
+
+    private void proceedKeyMessage(User user, UserMessage userMessage) {
+        try {
+            boolean isValidKey = validatePublicKey(user, userMessage);
+            if (isValidKey) {
+                userMessage = new UserMessage(user.getTrip(), "exchanged public key!");
+                addMessageToMessageQueue(userMessage);
+            } else {
+                userMessage = new UserMessage(user.getTrip(), "key exchange failed!");
             }
-        } catch (IOException | InterruptedException e) {
+            messageQueueBuffer.put(userMessage);
+        } catch (InterruptedException e) {
             e.printStackTrace();
             userLeftNotify(user);
+        }
+    }
+
+    private boolean validatePublicKey(User user, UserMessage userMessage) {
+        int keyOffset = userMessage.getBody().indexOf("publicKey ") + 10;
+        byte[] key = userMessage.getBody().substring(keyOffset).getBytes();
+        if (keyService.validatePublicKey(key)) {
+            keyService.setUserPublicKey(user, Base64.getDecoder().decode(key));
+            keyService.shareServerPublicKeyToUser(user);
+            keyService.generateAndSetSharedKeyToUser(user);
+            return true;
+        }
+        return false;
+    }
+
+    void addMessageToMessageQueue(UserMessage userMessage) {
+        try {
+            messageQueueBuffer.put(userMessage);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -159,7 +183,7 @@ public class ChatEngine implements Chat {
         });
     }
 
-    private void cancelReceiveAndShareMessageSchedulers(){
+    private void cancelReceiveAndShareMessageSchedulers() {
         boolean interrupted = false;
         try {
             while (scheduledFutureGetUserMessages == null ||
