@@ -23,15 +23,15 @@ import static main.server.utils.Constants.MESSAGE_USER_LEFT;
 //TODO FIX
 public class ChatEngine implements Chat {
 
-    private static final int USERS_MAX_NUMBER = 50;
-    private static final int MESSAGES_MAX_NUMBER = 300;
+    private static final int USERS_MAX = 50;
+    private static final int MESSAGES_MAX = 300;
     private static final int THREAD_NUMBER = 2;
 
     private static Runnable readShareRunnable;
 
     private static ScheduledExecutorService executorScheduler = newScheduledThreadPool(THREAD_NUMBER);
-    private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX_NUMBER, false);
-    private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX_NUMBER, true);
+    private static final BlockingQueue<UserMessage> messageQueueBuffer = new ArrayBlockingQueue<>(MESSAGES_MAX, false);
+    private static final BlockingQueue<User> userQueue = new ArrayBlockingQueue<>(USERS_MAX, true);
 
     private final GUIMessageService guiMessageService;
     private final KeyService keyService = new KeyServiceImpl();
@@ -64,6 +64,7 @@ public class ChatEngine implements Chat {
         try {
             if (messageQueueBuffer.size() != 0) {
                 final UserMessage userMessage = messageQueueBuffer.take();
+                //TODO: decrypt msg for users without shared key set
                 for (User user : userQueue) {
                     sendMessagesTo(user, userMessage);
                 }
@@ -99,7 +100,7 @@ public class ChatEngine implements Chat {
 
     private void proceedKeyMessage(User user, UserMessage userMessage) {
         try {
-            boolean isValidKey = validatePublicKey(user, userMessage);
+            boolean isValidKey = registerPublicKey(user, userMessage);
             if (isValidKey) {
                 userMessage = new UserMessage(user.getTrip(), "exchanged public key!");
                 addMessageToMessageQueue(userMessage);
@@ -113,7 +114,7 @@ public class ChatEngine implements Chat {
         }
     }
 
-    private boolean validatePublicKey(User user, UserMessage userMessage) {
+    private boolean registerPublicKey(User user, UserMessage userMessage) {
         int keyOffset = userMessage.getBody().indexOf("publicKey ") + 10;
         byte[] key = userMessage.getBody().substring(keyOffset).getBytes();
         if (keyService.validatePublicKey(key)) {
