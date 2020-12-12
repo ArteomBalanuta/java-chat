@@ -22,7 +22,7 @@ public class Client {
         this.enc = enc;
     }
 
-    public void setConnection(String host, int port) {
+    public void connect(String host, int port) {
         try {
             this.connection = new Socket(host, port);
 
@@ -52,8 +52,19 @@ public class Client {
     public String read() {
         String msg = null;
         try {
-            if (userReader.ready()) {
-                msg = userReader.readLine();
+            char[] charBuffer = new char[100];
+            char c;
+
+            int i = 0;
+            while (userReader.ready()) {
+                c = (char) userReader.read();
+                if (c != '\n') {
+                    charBuffer[i] = c;
+                    i++;
+                } else {
+                    msg = new String(charBuffer);
+                    break;
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
