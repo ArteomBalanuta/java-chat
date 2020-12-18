@@ -45,21 +45,8 @@ class ClientServerTest {
         clients.clear();
     }
 
-    void setUpClients(int numberOfClients) {
-        for (int i = 0; i < numberOfClients; i++) {
-            Client client = new Client();
-            client.setEnc(ISO_8859_1);
-
-            clients.add(client);
-        }
-    }
-
-    void connectClients() {
-        clients.forEach(client -> client.connect(hostname, serverPort));
-    }
-
     @Test
-    void givenClient_whenConnectedAndSent_thenReceivedExpected() {
+    void givenClient_whenConnectedAndSentMessage_thenReceivedExpectedMessage() {
         //Given
         setUpClients(1);
         Client client = clients.stream().findFirst().get();
@@ -83,11 +70,12 @@ class ClientServerTest {
     }
 
     @Test
-    void givenTwoClients_whenConnectedAndSent_thenReceivedExpected() {
+    void givenServerAndTwoClients_whenConnectedAndSentMessages_thenReceivedExpectedMessages() {
         //Given
         setUpClients(2);
         String[] expectedMessages = {"message from client 0", "message from client 1"};
         final Map<Client, List<String>> clientMessagesMap = new HashMap<>();
+        int expectedMessageCount = 2;
 
         //When
         connectClients();
@@ -95,22 +83,14 @@ class ClientServerTest {
         sendMessage(clients.get(1), expectedMessages[1]);
 
         //Then
-        for (int i = 0; i < clients.size(); i++) {
-            clientMessagesMap.put(clients.get(i), new ArrayList<>());
-
-            var expectedMessagesPerClient = 2;
-            int j = i;
-            await().pollDelay(ACCEPTABLE_DELAY.divide(2))
-                   .atMost(ACCEPTABLE_DELAY)
-                   .until(() -> expectedMessagesPerClient == readMessages(clients.get(j), clientMessagesMap));
-        };
+        readClientsMessages(clientMessagesMap, expectedMessageCount);
 
         assertThat(extractTextMessages(clients.get(0), clientMessagesMap), containsInAnyOrder(expectedMessages));
         assertThat(extractTextMessages(clients.get(1), clientMessagesMap), containsInAnyOrder(expectedMessages));
     }
 
     @Test
-    void givenClient_whenKeyRegistered_thenPublicServerKeyExpected() {
+    void givenClientAndPublicKeyRegistrationMessage_whenMessageSend_thenReceivedExpectedPublicServerKey() {
         //Given
         setUpClients(1);
         String publicKeyMessage = "publicKey MIIBIzCBmQYJKoZIhvcNAQMBMIGLAoGBAP//////////yQ/aoiFowjT" +
@@ -129,27 +109,43 @@ class ClientServerTest {
         sendMessage(clients.get(0), publicKeyMessage);
 
         //Then
-        for (int i = 0; i < clients.size(); i++) {
-            clientMessagesMap.put(clients.get(i), new ArrayList<>());
-
-            var expectedMessagesPerClient = 1;
-            int j = i;
-            await().pollDelay(ACCEPTABLE_DELAY.divide(2))
-                   .atMost(ACCEPTABLE_DELAY)
-                   .until(() -> expectedMessagesPerClient == readMessages(clients.get(j), clientMessagesMap));
-        }
+        readClientsMessages(clientMessagesMap, 1);
 
         assertThat(clientMessagesMap.get(clients.get(0)).get(0), containsString(expectedServerKeySignature));
+    }
+
+    private void setUpClients(int numberOfClients) {
+        for (int i = 0; i < numberOfClients; i++) {
+            Client client = new Client();
+            client.setEnc(ISO_8859_1);
+
+            clients.add(client);
+        }
+    }
+
+    private void connectClients() {
+        clients.forEach(client -> client.connect(hostname, serverPort));
     }
 
     private static void sendMessage(Client client, String message) {
         client.write(message);
     }
 
+    private void readClientsMessages(Map<Client, List<String>> clientMessagesMap, int expectedMessagesPerClient) {
+        for (int i = 0; i < clients.size(); i++) {
+            clientMessagesMap.put(clients.get(i), new ArrayList<>());
+            int j = i;
+
+            await().pollDelay(ACCEPTABLE_DELAY.divide(2))
+                    .atMost(ACCEPTABLE_DELAY)
+                    .until(() -> expectedMessagesPerClient == readMessages(clients.get(j), clientMessagesMap));
+        }
+    }
+
     private static int readMessages(Client client, Map<Client, List<String>> clientMessages) {
         int receivedMessageCount = 0;
 
-        String receivedMessage = null;
+        String receivedMessage;
         while ((receivedMessage = client.read()) != null) {
             clientMessages.get(client).add(receivedMessage);
             receivedMessageCount += 1;
@@ -168,7 +164,7 @@ class ClientServerTest {
     private static void disconnect(List<Client> clients) {
         clients.forEach(Client::disconnect);
         try {
-            //This timeout is needed in order to let server invalidate connected users and disconnect them.
+            //This timeout is needed in order to let server invalidate connected users and disconnect them in time.
             //TODO: implement user disconnect on server side
             Thread.sleep(50);
         } catch (InterruptedException e) {
