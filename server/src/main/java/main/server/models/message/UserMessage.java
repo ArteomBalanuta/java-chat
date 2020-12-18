@@ -9,6 +9,8 @@ public class UserMessage {
     private String body;
     private String message;
 
+    private boolean isEncrypted;
+
     public UserMessage() {
     }
 
@@ -23,6 +25,14 @@ public class UserMessage {
 
     public boolean isKeyExchangeMessage(){
         return this.body.contains("publicKey ");
+    }
+
+    public void setIsEncrypted(boolean flag){
+        isEncrypted = flag;
+    }
+
+    public boolean isEncrypted(){
+        return isEncrypted;
     }
 
     public String getOwner() {

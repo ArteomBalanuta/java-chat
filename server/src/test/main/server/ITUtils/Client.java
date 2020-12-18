@@ -22,6 +22,18 @@ public class Client {
         this.enc = enc;
     }
 
+    public void disconnect() {
+        try {
+            is.close();
+            os.close();
+            inputStreamReader.close();
+            outputStreamWriter.close();
+            userReader.close();
+            userWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     public void connect(String host, int port) {
         try {
             this.connection = new Socket(host, port);
@@ -52,7 +64,7 @@ public class Client {
     public String read() {
         String msg = null;
         try {
-            char[] charBuffer = new char[100];
+            char[] charBuffer = new char[500];
             char c;
 
             int i = 0;

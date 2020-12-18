@@ -18,9 +18,19 @@ public class User extends UserConfig {
     private PublicKey userPublicKey;
     private byte[] sharedKey;
 
+    private boolean isEncrypted = false;
+
     public User(Socket connection) {
         super(connection);
         this.trip = generateTrip();
+    }
+
+    public void setIsEncrypted(boolean flag){
+        isEncrypted = flag;
+    }
+
+    public boolean isEncrypted(){
+        return isEncrypted;
     }
 
     public PublicKey getUserPublicKey() {

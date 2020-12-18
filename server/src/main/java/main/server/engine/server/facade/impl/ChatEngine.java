@@ -62,11 +62,19 @@ public class ChatEngine implements Chat {
 
     public void shareUserMessages() {
         try {
+            final UserMessage userMessage;
             if (messageQueueBuffer.size() != 0) {
-                final UserMessage userMessage = messageQueueBuffer.take();
+                 userMessage = messageQueueBuffer.take();
+
                 //TODO: decrypt msg for users without shared key set
                 for (User user : userQueue) {
-                    sendMessagesTo(user, userMessage);
+                    if (user.isEncrypted()) {
+                        if(userMessage.isEncrypted()) {
+                            sendMessagesTo(user, userMessage);
+                        }
+                    } else {
+                        sendMessagesTo(user, userMessage);
+                    }
                 }
             }
         } catch (InterruptedException e) {
@@ -90,27 +98,19 @@ public class ChatEngine implements Chat {
 
         boolean isSharedKeyPresent = user.getSharedKey() != null;
         if (isSharedKeyPresent) {
-            userMessage.setBody(
-                    rsaService.decryptMessage(user, Base64.getDecoder().decode(userMessage.getBody()))
-            );
+            userMessage.setBody(rsaService.decryptMessage(
+                            user,
+                            Base64.getDecoder().decode(userMessage.getBody())) );
+
         }
 
         addMessageToMessageQueue(userMessage);
     }
 
     private void proceedKeyMessage(User user, UserMessage userMessage) {
-        try {
-            boolean isValidKey = registerPublicKey(user, userMessage);
-            if (isValidKey) {
-                userMessage = new UserMessage(user.getTrip(), "exchanged public key!");
-                addMessageToMessageQueue(userMessage);
-            } else {
-                userMessage = new UserMessage(user.getTrip(), "key exchange failed!");
-            }
-            messageQueueBuffer.put(userMessage);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            userLeftNotify(user);
+        boolean isValidKey = registerPublicKey(user, userMessage);
+        if (isValidKey) {
+            user.setIsEncrypted(true);
         }
     }
 
