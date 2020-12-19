@@ -11,11 +11,11 @@ public class Stop extends Command {
     public void execute() {
         GUIMessage guiMessage = new GUIMessage(cmd, Color.GRAY, true);
         guiService.print(guiMessage);
-        chat.stop();
+        chatEngine.stop();
     }
 
     @Override
-    public String getCommandString() {
+    public String getString() {
         return this.cmd;
     }
 }

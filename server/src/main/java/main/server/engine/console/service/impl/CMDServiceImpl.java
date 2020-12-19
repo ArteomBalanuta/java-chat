@@ -19,6 +19,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
 
 public class CMDServiceImpl implements CMDService {
+    private GUIService guiService;
+
     private static final BlockingQueue<Command> commandQueue = new ArrayBlockingQueue<>(5);
     private static final List<Command> supportedCommands = new ArrayList<>();
 
@@ -28,14 +30,13 @@ public class CMDServiceImpl implements CMDService {
         supportedCommands.add(new Start());
     }
 
-    private GUIService guiService;
-
     //TODO: Chat should not be injected here!
     public CMDServiceImpl(GUIService guiService){
         this.guiService = guiService;
+        setKeyListener();
     }
 
-    public void setUpKeyListener(){
+    private void setUpKeyListener(){
         setKeyListener();
     }
 
@@ -50,14 +51,14 @@ public class CMDServiceImpl implements CMDService {
     }
 
     private boolean isSupportedCommand(String cmd) {
-        return supportedCommands.stream().anyMatch(c -> c.getCommandString().equals(cmd));
+        return supportedCommands.stream().anyMatch(c -> c.getString().equals(cmd));
     }
 
     private void enqueueCommand(String cmd) {
         try {
             if (isSupportedCommand(cmd)) {
                 commandQueue.put(supportedCommands.stream()
-                        .filter(c -> c.getCommandString().equals(cmd))
+                        .filter(c -> c.getString().equals(cmd))
                         .collect(Collectors.toList()).get(0));
             }
         } catch (InterruptedException e) {

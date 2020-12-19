@@ -35,7 +35,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>main.server.Run</mainClass>
+                            <mainClass>main.server.ApplicationRunner</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

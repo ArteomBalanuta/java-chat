@@ -11,11 +11,11 @@ public class Start extends Command {
     public void execute() {
         GUIMessage guiMessage = new GUIMessage(cmd, Color.GRAY, true);
         guiService.print(guiMessage);
-        chat.start();
+        chatEngine.start();
     }
 
     @Override
-    public String getCommandString() {
+    public String getString() {
         return this.cmd;
     }
 }

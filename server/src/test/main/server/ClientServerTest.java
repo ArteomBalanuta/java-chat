@@ -1,12 +1,22 @@
 package main.server;
 
 import main.server.ITUtils.Client;
+import main.server.engine.console.facade.GUIFacade;
+import main.server.engine.console.facade.impl.GUIFacadeImpl;
+import main.server.engine.console.service.CMDService;
+import main.server.engine.console.service.GUIMessageService;
+import main.server.engine.console.service.GUIService;
+import main.server.engine.console.service.impl.CMDServiceImpl;
+import main.server.engine.console.service.impl.GUIMessageServiceImpl;
+import main.server.engine.console.service.impl.GUIServiceImpl;
+import main.server.engine.server.facade.ChatEngine;
+import main.server.engine.server.facade.impl.ChatEngineImpl;
 import org.awaitility.Duration;
-import org.hamcrest.core.IsNull;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,19 +34,16 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 @ExtendWith({MockitoExtension.class})
 @TestInstance(PER_CLASS)
 class ClientServerTest {
-
-    private List<Client> clients = new ArrayList<>();
-
-    private String hostname = "localhost";
-    private int serverPort = 800;
+    private final String hostname = "localhost";
+    private final int serverPort = 800;
     private static final Duration ACCEPTABLE_DELAY = Duration.TWO_HUNDRED_MILLISECONDS;
 
-    @BeforeAll
-    static void setUpServer(){
-        Run serverRunner = new Run();
-        String[] emptyArgs = {};
+    private final List<Client> clients = new ArrayList<>();
 
-        Run.main(emptyArgs);
+    @BeforeAll
+    static void setUpServer() {
+        String[] args = new String[0];
+        ApplicationRunner.main(args);
     }
 
     @AfterEach

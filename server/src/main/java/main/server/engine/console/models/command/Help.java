@@ -17,7 +17,7 @@ public class Help extends Command {
     }
 
     @Override
-    public String getCommandString() {
+    public String getString() {
         return this.cmd;
     }
 }

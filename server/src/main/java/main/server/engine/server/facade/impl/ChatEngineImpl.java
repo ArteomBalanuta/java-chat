@@ -2,7 +2,7 @@ package main.server.engine.server.facade.impl;
 
 import main.server.engine.console.models.GUIMessage;
 import main.server.engine.console.service.GUIMessageService;
-import main.server.engine.server.facade.Chat;
+import main.server.engine.server.facade.ChatEngine;
 import main.server.engine.server.service.KeyService;
 import main.server.engine.server.service.RSAService;
 import main.server.engine.server.service.impl.KeyServiceImpl;
@@ -21,7 +21,7 @@ import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static main.server.utils.Constants.MESSAGE_USER_LEFT;
 
 //TODO FIX
-public class ChatEngine implements Chat {
+public class ChatEngineImpl implements ChatEngine {
 
     private static final int USERS_MAX = 50;
     private static final int MESSAGES_MAX = 300;
@@ -43,7 +43,7 @@ public class ChatEngine implements Chat {
     private ScheduledFuture<?> scheduledFutureShareUserMessages = null;
     private ScheduledFuture<?> scheduledFutureCheckUserConnections = null;
 
-    public ChatEngine(GUIMessageService guiMessageService) {
+    public ChatEngineImpl(GUIMessageService guiMessageService) {
         this.guiMessageService = guiMessageService;
         this.rsaService.setKeyService(keyService);
     }
